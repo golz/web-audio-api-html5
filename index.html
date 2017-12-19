@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+	<audio autoplay>
+		<source src="nar.wav" type="audio/wav">
+	</audio>
+	<canvas></canvas>
+	<script> 
+		// initialize context and nodes 
+		var audioContext = new AudioContext(); 
+		var oscillatorNode = audioContext.createOscillator(); 
+		var audioSource = document.querySelector('audio'); 
+		var sourceNode = audioContext.createMediaElementSource(audioSource); 
+		var filterNode = audioContext.createBiquadFilter(); 
+		var gainNode = audioContext.createGain(); 
+		var analyserNode = audioContext.createAnalyser(); 
+		var destinationNode = audioContext.destination; 
+		// adjust nodes 
+		oscillatorNode.frequency.value = 440; 
+		oscillatorNode.type = 'sine'; 
+		oscillatorNode.start(); 
+		filterNode.frequency.value = 8000; 
+		filterNode.gain.value = -100; 
+		filterNode.type = 'lowpass'; 
+		gainNode.gain.value = 0.17; 
+		// connect nodes 
+		sourceNode.connect(analyserNode);
+		//sourceNode.connect(filterNode); 
+		//filterNode.connect(analyserNode); 
+		//oscillatorNode.connect(analyserNode); 
+		//gainNode.connect(analyserNode); 
+		analyserNode.connect(destinationNode); 
+		analyserNode.fftSize = 8192; 
+		var canvas = document.querySelector('canvas'); 
+		canvas.width = 1200; 
+		canvas.height = 500; 
+		var canvasContext = canvas.getContext('2d'); 
+		var bytes = new Uint8Array(analyserNode.frequencyBinCount); 
+		function animate() { 
+			requestAnimationFrame(animate); 
+			canvasContext.clearRect(0, 0, canvas.width, canvas.height); 
+			analyserNode.getByteFrequencyData(bytes); 
+			var x = 0; 
+			for (var i = 0; i < analyserNode.frequencyBinCount; i++) { 
+				var y = canvas.height - bytes[i]; 
+				//canvasContext.fillStyle = 'rgba('+i+','+(255-i)+','+255+',1)';
+				canvasContext.fillStyle = 'hsla('+(i/512*90)+',100%,50%,1)';
+				canvasContext.fillRect(x, y, 1, bytes[i]); 
+				x+=1; 
+			} 
+		} 
+		animate(); 
+	</script> 
+</body>
+</html>

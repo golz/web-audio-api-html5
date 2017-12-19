@@ -1,0 +1,187 @@
+<html>
+    <head>
+        <style>
+            html, body{
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                background-color: #ff9800;
+            }
+            #anjay{
+                width: 100%;
+                height: 100%;;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 100px;
+                font-family: 'Segoe UI';
+                font-weight: 300;
+                color: #fff;
+                z-index: 1;
+                position: relative;
+            }
+            #canjay{
+                position: fixed;
+                z-index: 0;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="anjay">
+            
+        </div>
+        <canvas id="canjay">
+            
+        </canvas>
+    </body>
+    <script>
+        var listOfValidKeys = {
+            'a': {
+                'tone' : 'c' , 
+                'freq' : 261},
+            's': {
+                'tone' : 'd' , 
+                'freq' : 293},
+            'd': {
+                'tone' : 'e' , 
+                'freq' : 329},
+            'f': {
+                'tone' : 'f' , 
+                'freq' : 349},
+            'g': {
+                'tone' : 'g' , 
+                'freq' : 392},
+            'h': {
+                'tone' : 'a' , 
+                'freq' : 440},
+            'j': {
+                'tone' : 'b' , 
+                'freq' : 493},
+            'k': {
+                'tone' : 'c1', 
+                'freq' : 523}
+        };
+        var audioContext = new AudioContext(); 
+        var destinationNode = audioContext.destination; 
+        var oscillators = [];
+        window.addEventListener('keydown', function(e){
+            if(e.key in listOfValidKeys){
+                var oscillatorNode;
+                if(!(e.key in oscillators) || oscillators[e.key] == null){
+                    oscillatorNode = audioContext.createOscillator(); 
+                    var freq = listOfValidKeys[e.key].freq;
+                    oscillatorNode.frequency.value = freq;
+                    oscillatorNode.type = 'square'; 
+                    oscillatorNode.connect(destinationNode);
+                    oscillators[e.key] = oscillatorNode;
+                }
+                else{
+                    oscillatorNode = oscillators[e.key];
+                }
+                var tone = listOfValidKeys[e.key].tone;
+                document.getElementById('anjay').innerText = tone;
+                q.push(tone);
+                if(oscillatorNode!=null){
+                    oscillatorNode.start();
+                }
+            }
+        });
+        window.addEventListener('keyup', function(e){
+            if(e.key in oscillators){
+                var oscillatorNode = oscillators[e.key];
+                if(oscillatorNode!=null){
+                    oscillatorNode.stop();
+
+                    oscillators[e.key] = null;
+                }
+            }
+        })
+    </script>
+    <script type="text/javascript">
+        var canvas;
+        var g;
+        var q = [];
+        var objList = [];
+        document.addEventListener('DOMContentLoaded', function(e){
+            canvas = document.getElementById('canjay');
+            g = canvas.getContext('2d');
+            init();
+        });
+        var dt = 0;
+        var lastRender = 0;
+        function init()
+        {
+            resizeCanvas();
+            draw();
+        }
+        function draw()
+        {   
+            if(lastRender != 0){
+                dt = Date.now() - lastRender;
+                dt = dt > 1000 ? 1000 : dt;
+            }
+            g.clearRect(0,0,canvas.width,canvas.height);
+
+            if(q.length != 0)
+            {
+                var text = q.pop();
+                objList.push(new NewBar());
+                objList[objList.length-1].construct(text);
+            }
+            for(var i=0;i<objList.length;i++)
+            {
+                var obj = objList[i];
+                obj.update(dt);
+                obj.render();
+            }
+            var temp = [];
+            for(var i = 0; i < objList.length; i++){
+                if(!objList[i].isDead()){
+                    temp.push(objList[i]);
+                }
+            }
+            objList = temp;
+            lastRender = Date.now();
+            requestAnimationFrame(draw);
+        }
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        function NewBar()
+        {
+            this.maxLifetime = 1000;
+            this.construct = function(text){
+                this.x = Math.random()*canvas.width+1;
+                this.y = Math.random()*canvas.height+1;
+                this.lifetime = this.maxLifetime;
+                this.text = text;
+                this.font = (Math.random()*30+20);
+            }
+            this.render = function(){
+                g.fillStyle = "rgba(255, 255, 255, " + this.opacity() + ")";
+                var fontSize = this.font * (1 + (1 - this.opacity()));
+                g.font = fontSize + "px Segoe UI";
+                g.fillText(this.text+"",this.x,this.y);
+            }
+            this.update = function(dt){
+                this.y-=1;
+                this.lifetime -= dt;
+            }
+            this.opacity = function(){
+                return this.lifetime / this.maxLifetime;
+            }
+            this.isDead = function(){
+                return this.lifetime <= 0;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</html>
